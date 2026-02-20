@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DDLJ</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { width: 100vw; height: 100vh; overflow: hidden; font-family: 'Cormorant Garamond', serif; background: #1a0f00; }
+
+/* ── START OVERLAY ── */
+.start-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.82);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.6s ease;
+}
+.start-overlay.fade-out { opacity: 0; pointer-events: none; }
+.start-btn {
+  width: 110px; height: 110px;
+  background: radial-gradient(circle at 40% 40%, #ffe066, #f5c842 45%, #c9962a);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 44px;
+  box-shadow: 0 0 0 16px rgba(245,200,66,0.12), 0 0 60px 20px rgba(245,180,0,0.35);
+  animation: btnPulse 2s ease-in-out infinite;
+  margin-bottom: 22px;
+  transition: transform 0.15s;
+}
+.start-btn:hover { transform: scale(1.07); }
+@keyframes btnPulse {
+  0%,100% { box-shadow: 0 0 0 16px rgba(245,200,66,0.12), 0 0 60px 20px rgba(245,180,0,0.30); }
+  50%      { box-shadow: 0 0 0 24px rgba(245,200,66,0.18), 0 0 90px 35px rgba(245,180,0,0.45); }
+}
+.start-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: clamp(1.6rem, 3.5vw, 2.6rem);
+  color: white;
+  text-shadow: 0 0 30px rgba(245,200,66,0.6);
+  letter-spacing: 2px;
+}
+.start-sub {
+  font-size: 0.8rem;
+  color: rgba(255,200,100,0.55);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-top: 10px;
+}
+
+.scene { position: relative; width: 100%; height: 100%; }
+
+/* ── SKY ── */
+.sky { position: absolute; inset: 0; height: 56%; background: linear-gradient(180deg,#1a4a8a 0%,#3a7ac8 18%,#72b8e8 34%,#b8daf5 46%,#f5e8b0 56%,#f5c842 68%,#e8892a 82%,#b84a10 100%); }
+.sun { position: absolute; top: 13%; right: 16%; width: 72px; height: 72px; background: radial-gradient(circle at 42% 42%,#fffde7,#ffd600 38%,#ffab00 68%,#ff8f00); border-radius: 50%; box-shadow: 0 0 0 14px rgba(255,214,0,.10),0 0 0 35px rgba(255,214,0,.06),0 0 90px 35px rgba(255,180,0,.30); animation: sunGlow 5s ease-in-out infinite; }
+@keyframes sunGlow {
+  0%,100% { box-shadow: 0 0 0 14px rgba(255,214,0,.10),0 0 0 35px rgba(255,214,0,.06),0 0 90px 35px rgba(255,180,0,.30); }
+  50%      { box-shadow: 0 0 0 18px rgba(255,214,0,.13),0 0 0 45px rgba(255,214,0,.08),0 0 120px 45px rgba(255,180,0,.38); }
+}
+.haze { position: absolute; left:0; right:0; top:43%; height:16%; background: linear-gradient(180deg,rgba(254,243,189,0) 0%,rgba(254,243,189,0.5) 50%,rgba(245,208,80,0.35) 100%); filter: blur(8px); z-index:3; }
+.treeline { position: absolute; left:0; right:0; top:49%; height:9%; z-index:2; }
+.treeline svg { width:100%; height:100%; }
+.ground { position: absolute; left:0; right:0; bottom:0; top:53%; background: linear-gradient(180deg,#4e8030 0%,#3d6b1e 35%,#2c5014 100%); z-index:4; }
+.field { position: absolute; left:0; right:0; bottom:0; top:53%; z-index:5; overflow:hidden; }
+canvas#fieldCanvas { position:absolute; inset:0; width:100%; height:100%; }
+
+/* ── CHARACTER ── */
+.character { position:absolute; bottom:32%; left:50%; transform:translateX(-50%); z-index:20; width:170px; display:flex; flex-direction:column; align-items:center; }
+.char-shadow { position:absolute; bottom:-10px; left:50%; transform:translateX(-50%); width:95px; height:16px; background:radial-gradient(ellipse,rgba(0,0,0,0.4) 0%,transparent 72%); border-radius:50%; }
+.body-group { position:relative; display:flex; flex-direction:column; align-items:center; animation:breathe 3.8s ease-in-out infinite; transform-origin:bottom center; }
+@keyframes breathe { 0%,100%{transform:translateY(0) rotate(0deg)} 50%{transform:translateY(-6px) rotate(0.4deg)} }
+.head-wrap { position:relative; margin-bottom:-3px; animation:headBob 3.8s ease-in-out infinite; transform-origin:bottom center; }
+@keyframes headBob { 0%,100%{transform:rotate(-1.2deg)} 50%{transform:rotate(1.2deg)} }
+.head { position:relative; width:58px; height:66px; border-radius:48% 48% 44% 44%/50% 50% 52% 52%; background:radial-gradient(ellipse at 40% 38%,#daa070 0%,#c27848 52%,#aa6030 100%); box-shadow:inset -7px -5px 14px rgba(0,0,0,0.28),inset 3px 3px 10px rgba(255,210,150,0.18),0 5px 16px rgba(0,0,0,0.32); overflow:hidden; }
+.head::after { content:''; position:absolute; inset:0; background:radial-gradient(circle at 64% 28%,rgba(255,225,180,0.14) 0%,transparent 42%); border-radius:inherit; }
+/* ── HAIR (longer, flows past ears/neck) ── */
+.hair {
+  position:absolute; top:-6px; left:-8px; right:-8px; height:38px;
+  background:linear-gradient(180deg,#100700 0%,#1e1000 60%,#160b00 100%);
+  border-radius:54% 54% 0 0;
+  box-shadow: inset 0 -5px 12px rgba(0,0,0,0.6), inset 2px 0 6px rgba(255,180,80,0.04);
+  overflow: visible;
+  z-index: 5;
+}
+/* side curtains that fall to jaw level */
+.hair::before {
+  content:''; position:absolute; bottom:-22px; left:-3px;
+  width:16px; height:30px;
+  background:linear-gradient(170deg,#1e1000 0%,#140900 55%,#0e0600 100%);
+  border-radius:10% 20% 50% 60%;
+}
+.hair::after {
+  content:''; position:absolute; bottom:-22px; right:-3px;
+  width:16px; height:30px;
+  background:linear-gradient(190deg,#1e1000 0%,#140900 55%,#0e0600 100%);
+  border-radius:20% 10% 60% 50%;
+}
+/* subtle highlight streak on top */
+.hair-shine {
+  position:absolute; top:6px; left:30%; width:30px; height:7px;
+  background:rgba(255,255,255,0.06); border-radius:50%; filter:blur(3px);
+}
+.brow { position:absolute; top:22px; width:12px; height:2.5px; background:#0d0600; border-radius:2px; }
+.brow-l { left:9px; transform:rotate(-8deg); } .brow-r { right:10px; transform:rotate(8deg); }
+.eye { position:absolute; top:30px; width:10px; height:10px; background:#080300; border-radius:50%; box-shadow:0 0 0 1.5px #1a0e04,0 1px 3px rgba(0,0,0,0.5); }
+.eye::before { content:''; position:absolute; top:1.5px; right:2px; width:3px; height:3px; background:rgba(255,255,255,0.88); border-radius:50%; }
+.eye::after { content:''; position:absolute; bottom:2px; left:2px; width:2px; height:2px; background:rgba(255,255,255,0.28); border-radius:50%; }
+.eye-l { left:10px; } .eye-r { right:11px; }
+.lash { position:absolute; top:27px; width:13px; height:5px; }
+.lash-l { left:9px; } .lash-r { right:9px; }
+.lash::after { content:''; display:block; width:100%; height:3.5px; border-top:3px solid #0d0600; border-radius:60% 60% 0 0/100% 100% 0 0; }
+.nose { position:absolute; top:38px; left:50%; transform:translateX(-50%); width:9px; height:8px; background:#aa6030; border-radius:38% 38% 58% 58%; }
+.nose::before,.nose::after { content:''; position:absolute; bottom:1px; width:4px; height:3.5px; background:#8a4020; border-radius:50%; }
+.nose::before { left:-2.5px; } .nose::after { right:-2.5px; }
+.smile { position:absolute; bottom:11px; left:50%; transform:translateX(-50%); width:24px; height:11px; border-bottom:2.5px solid #7a3818; border-radius:0 0 50% 50%; }
+.smile::before { content:''; position:absolute; bottom:-3px; left:-5px; width:5px; height:4px; background:rgba(0,0,0,0.08); border-radius:50%; box-shadow:33px 0 0 rgba(0,0,0,0.08); }
+.lip-upper { position:absolute; bottom:18px; left:50%; transform:translateX(-50%); width:14px; height:5px; background:#9a4a28; border-radius:40% 40% 0 0; clip-path:polygon(0% 100%,50% 0%,100% 100%); }
+.cheek { position:absolute; bottom:18px; width:10px; height:6px; background:rgba(200,80,60,0.12); border-radius:50%; filter:blur(2px); }
+.cheek-l { left:5px; } .cheek-r { right:5px; }
+.neck { width:20px; height:14px; background:linear-gradient(180deg,#c07848 0%,#aa6030 100%); margin:0 auto; position:relative; z-index:1; }
+.torso { position:relative; width:78px; height:105px; }
+.jacket-body { position:absolute; bottom:0; left:50%; transform:translateX(-50%); width:74px; height:100px; background:linear-gradient(155deg,#202020 0%,#141414 48%,#0c0c0c 100%); border-radius:7px 7px 5px 5px; box-shadow:inset -12px 0 24px rgba(255,255,255,0.04),inset 6px 0 18px rgba(255,255,255,0.06),0 10px 28px rgba(0,0,0,0.55); overflow:hidden; }
+.jacket-body::before { content:''; position:absolute; top:0; left:12px; right:22px; height:44px; background:linear-gradient(155deg,rgba(255,255,255,0.08) 0%,transparent 55%); border-radius:0 0 50% 50%; }
+.jacket-body::after { content:''; position:absolute; top:0; left:50%; transform:translateX(-50%); width:1.5px; height:62%; background:linear-gradient(180deg,rgba(160,120,0,0.9) 0%,rgba(100,80,0,0.45) 100%); }
+.collar-l { position:absolute; top:0; left:5px; width:0; height:0; border-left:16px solid transparent; border-top:30px solid #2a2a2a; filter:drop-shadow(2px 3px 3px rgba(0,0,0,0.6)); }
+.collar-r { position:absolute; top:0; right:5px; width:0; height:0; border-right:16px solid transparent; border-top:30px solid #2a2a2a; filter:drop-shadow(-2px 3px 3px rgba(0,0,0,0.6)); }
+.shirt-peek { position:absolute; top:0; left:50%; transform:translateX(-50%); width:14px; height:22px; background:linear-gradient(180deg,#e8dcc8,#d4c8b0); clip-path:polygon(28% 0,72% 0,88% 100%,12% 100%); }
+.arm-l { position:absolute; top:10px; left:-24px; width:21px; height:82px; background:linear-gradient(180deg,#1e1e1e 0%,#111 100%); border-radius:9px 6px 5px 5px; transform-origin:top center; box-shadow:inset -3px 0 8px rgba(255,255,255,0.05),0 5px 10px rgba(0,0,0,0.45); }
+.arm-l::after { content:''; position:absolute; bottom:0; left:0; right:0; height:20px; background:linear-gradient(180deg,#c07848 0%,#a86030 100%); border-radius:0 0 5px 5px; }
+.fingers-l { position:absolute; bottom:-6px; left:1px; display:flex; gap:2px; }
+.finger { width:5px; height:8px; background:#c07848; border-radius:3px 3px 4px 4px; }
+/* ── STRUMMING ARM (right) — sharp down-stroke, float back up ── */
+.arm-r {
+  position:absolute; top:7px; right:-30px; width:21px; height:88px;
+  background:linear-gradient(180deg,#1e1e1e 0%,#111 100%);
+  border-radius:9px 6px 5px 5px;
+  transform-origin: top center;
+  box-shadow:inset 3px 0 8px rgba(255,255,255,0.05),0 5px 10px rgba(0,0,0,0.45);
+  animation: strumArm 0.55s cubic-bezier(0.4,0,0.2,1) infinite;
+}
+.arm-r::after {
+  content:''; position:absolute; bottom:0; left:0; right:0; height:20px;
+  background:linear-gradient(180deg,#c07848 0%,#a86030 100%);
+  border-radius:0 0 5px 5px;
+}
+@keyframes strumArm {
+  0%   { transform: rotate(-16deg) translateX(0px);   }   /* rest high */
+  20%  { transform: rotate(-42deg) translateX(5px);   }   /* snap down */
+  38%  { transform: rotate(-44deg) translateX(6px);   }   /* hit bottom */
+  60%  { transform: rotate(-24deg) translateX(2px);   }   /* float back */
+  80%  { transform: rotate(-14deg) translateX(-1px);  }   /* overshoot up */
+  100% { transform: rotate(-16deg) translateX(0px);   }
+}
+
+/* ── GUITAR BODY rocks with the strum ── */
+.guitar-wrap {
+  position:absolute; bottom:-52px; right:-72px;
+  transform-origin: 28% 22%;
+  animation: guitarRock 0.55s cubic-bezier(0.4,0,0.2,1) infinite;
+}
+@keyframes guitarRock {
+  0%   { transform: rotate(-33deg); }
+  20%  { transform: rotate(-38deg); }
+  38%  { transform: rotate(-39deg); }
+  60%  { transform: rotate(-35deg); }
+  80%  { transform: rotate(-32deg); }
+  100% { transform: rotate(-33deg); }
+}
+.guitar-svg { width:68px; filter:drop-shadow(4px 8px 14px rgba(0,0,0,0.65)); }
+
+/* ── FRET ARM (left) — slower chord changes ── */
+.arm-l {
+  position:absolute; top:10px; left:-24px; width:21px; height:82px;
+  background:linear-gradient(180deg,#1e1e1e 0%,#111 100%);
+  border-radius:9px 6px 5px 5px;
+  transform-origin: top center;
+  box-shadow:inset -3px 0 8px rgba(255,255,255,0.05),0 5px 10px rgba(0,0,0,0.45);
+  animation: chordShift 1.65s ease-in-out infinite;
+}
+.arm-l::after {
+  content:''; position:absolute; bottom:0; left:0; right:0; height:20px;
+  background:linear-gradient(180deg,#c07848 0%,#a86030 100%);
+  border-radius:0 0 5px 5px;
+}
+@keyframes chordShift {
+  0%   { transform: rotate(22deg) translateY(0px);  }
+  22%  { transform: rotate(26deg) translateY(3px);  }   /* press chord */
+  44%  { transform: rotate(24deg) translateY(1px);  }
+  66%  { transform: rotate(20deg) translateY(-2px); }   /* shift up neck */
+  88%  { transform: rotate(23deg) translateY(1px);  }
+  100% { transform: rotate(22deg) translateY(0px);  }
+}
+.guitar-svg { width:68px; filter:drop-shadow(4px 8px 14px rgba(0,0,0,0.65)); }
+.legs { display:flex; gap:7px; margin-top:-2px; }
+.leg { width:25px; height:72px; background:linear-gradient(180deg,#203a60 0%,#162d4a 100%); border-radius:4px 4px 7px 7px; box-shadow:inset -5px 0 10px rgba(0,0,0,0.32),inset 2px 0 4px rgba(255,255,255,0.05); position:relative; }
+.leg::before { content:''; position:absolute; top:12px; left:5px; right:5px; height:2px; background:rgba(255,255,255,0.07); border-radius:50%; }
+.shoe { position:absolute; bottom:-9px; left:-5px; width:35px; height:12px; background:linear-gradient(180deg,#141414 0%,#0a0a0a 100%); border-radius:5px 10px 4px 3px; box-shadow:0 4px 8px rgba(0,0,0,0.55); }
+
+/* ── MUSIC NOTES ── */
+.note { position:fixed; pointer-events:none; animation:floatNote ease-out forwards; z-index:30; color:rgba(255,218,50,0.92); text-shadow:0 0 10px rgba(255,200,0,0.65); }
+@keyframes floatNote {
+  0%   { opacity:0; transform:translate(0,0) rotate(0deg) scale(0.5); }
+  12%  { opacity:1; transform:translate(calc(var(--nx)*0.1),-8px) rotate(4deg) scale(1); }
+  80%  { opacity:0.75; }
+  100% { opacity:0; transform:translate(var(--nx),var(--ny)) rotate(var(--nr)) scale(0.65); }
+}
+
+/* ── NOW PLAYING BAR ── */
+.now-playing { position:fixed; bottom:28px; left:50%; transform:translateX(-50%); z-index:50; background:rgba(8,4,0,0.58); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border:1px solid rgba(245,200,60,0.28); border-radius:50px; padding:11px 28px; display:none; align-items:center; gap:16px; }
+.now-playing.active { display:flex; }
+.np-bars { display:flex; align-items:flex-end; gap:2.5px; height:20px; }
+.np-bar { width:3px; background:#f5c842; border-radius:2px; animation:barBounce ease-in-out infinite alternate; }
+.np-bar:nth-child(1){height:10px;animation-duration:.48s}
+.np-bar:nth-child(2){height:18px;animation-duration:.65s;animation-delay:.1s}
+.np-bar:nth-child(3){height:13px;animation-duration:.40s;animation-delay:.2s}
+.np-bar:nth-child(4){height:20px;animation-duration:.58s;animation-delay:.15s}
+.np-bar:nth-child(5){height:11px;animation-duration:.52s;animation-delay:.05s}
+@keyframes barBounce { 0%{transform:scaleY(0.25)} 100%{transform:scaleY(1)} }
+.np-text { font-family:'Cormorant Garamond',serif; font-style:italic; font-size:0.92rem; color:rgba(255,225,140,0.9); letter-spacing:0.4px; }
+
+.vignette { position:fixed; inset:0; background:radial-gradient(ellipse at 50% 50%,transparent 38%,rgba(0,0,0,0.52) 100%); pointer-events:none; z-index:40; }
+</style>
+</head>
+<body>
+
+<!-- CLICK TO START -->
+<div class="start-overlay" id="startOverlay" onclick="startScene()">
+  <div class="start-btn">▶</div>
+  <div class="start-title">Tujhe Dekha To...</div>
+  <div class="start-sub">click anywhere to begin</div>
+</div>
+
+<div class="scene">
+  <div class="sky"></div>
+  <div class="sun"></div>
+  <div class="haze"></div>
+  <div class="treeline">
+    <svg viewBox="0 0 1440 80" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0,80 L0,54 Q28,32 58,50 Q80,18 112,44 Q135,8 162,40 Q188,22 215,46 Q242,14 268,44 Q294,28 318,50 Q344,16 370,44 Q396,6 422,42 Q448,20 472,48 Q498,28 524,48 Q548,10 572,42 Q598,22 624,48 Q648,30 674,52 Q700,14 726,44 Q752,26 778,50 Q804,12 830,44 Q856,22 882,48 Q908,30 934,52 Q960,16 986,44 Q1012,24 1038,48 Q1064,30 1090,52 Q1116,14 1142,44 Q1168,22 1194,48 Q1220,30 1248,50 Q1274,14 1300,44 Q1326,22 1352,48 Q1376,30 1408,52 L1440,54 L1440,80 Z" fill="#244810" opacity="0.85"/>
+      <path d="M0,80 L0,64 Q22,50 46,60 Q68,40 92,58 Q116,44 142,62 Q166,36 190,56 Q216,48 240,64 Q264,38 288,58 Q314,50 340,66 Q364,40 388,58 Q412,50 436,66 Q460,42 484,60 Q508,52 534,68 Q558,40 582,58 Q608,50 634,66 Q660,44 686,60 Q712,52 738,68 L1440,66 L1440,80 Z" fill="#3a6818" opacity="0.6"/>
+    </svg>
+  </div>
+  <div class="ground"></div>
+  <div class="field"><canvas id="fieldCanvas"></canvas></div>
+
+  <!-- CHARACTER -->
+  <div class="character" id="character">
+    <div class="char-shadow"></div>
+    <div class="body-group">
+      <div class="head-wrap">
+        <div class="head">
+          <div class="hair">
+            <div class="hair-shine"></div>
+          </div>
+          <div class="brow brow-l"></div><div class="brow brow-r"></div>
+          <div class="eye eye-l"></div><div class="eye eye-r"></div>
+          <div class="lash lash-l"></div><div class="lash lash-r"></div>
+          <div class="nose"></div>
+          <div class="lip-upper"></div>
+          <div class="smile"></div>
+          <div class="cheek cheek-l"></div><div class="cheek cheek-r"></div>
+        </div>
+      </div>
+      <div class="neck"></div>
+      <div class="torso">
+        <div class="jacket-body">
+          <div class="collar-l"></div><div class="collar-r"></div>
+          <div class="shirt-peek"></div>
+        </div>
+        <div class="arm-l">
+          <div class="fingers-l"><div class="finger"></div><div class="finger"></div><div class="finger"></div></div>
+        </div>
+        <div class="arm-r"></div>
+        <div class="guitar-wrap">
+          <svg class="guitar-svg" viewBox="0 0 66 135" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="gBody" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#8a3c1c"/><stop offset="32%" stop-color="#a85030"/>
+                <stop offset="64%" stop-color="#6a2c0c"/><stop offset="100%" stop-color="#4a1a08"/>
+              </linearGradient>
+              <linearGradient id="gNeck" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#5a2c0a"/><stop offset="50%" stop-color="#7a4020"/><stop offset="100%" stop-color="#5a2c0a"/>
+              </linearGradient>
+              <radialGradient id="gSheen" cx="30%" cy="30%">
+                <stop offset="0%" stop-color="rgba(255,255,255,0.12)"/><stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+              </radialGradient>
+            </defs>
+            <rect x="27.5" y="1" width="11" height="64" rx="3.5" fill="url(#gNeck)"/>
+            <line x1="27.5" y1="14" x2="38.5" y2="14" stroke="#c8a060" stroke-width="1.3" opacity="0.75"/>
+            <line x1="27.5" y1="24" x2="38.5" y2="24" stroke="#c8a060" stroke-width="1.3" opacity="0.75"/>
+            <line x1="27.5" y1="34" x2="38.5" y2="34" stroke="#c8a060" stroke-width="1.3" opacity="0.75"/>
+            <line x1="27.5" y1="44" x2="38.5" y2="44" stroke="#c8a060" stroke-width="1.3" opacity="0.75"/>
+            <line x1="27.5" y1="54" x2="38.5" y2="54" stroke="#c8a060" stroke-width="1.3" opacity="0.75"/>
+            <rect x="23" y="0" width="20" height="12" rx="4" fill="#42180a"/>
+            <circle cx="26.5" cy="6" r="3" fill="#b89050"/><circle cx="39.5" cy="6" r="3" fill="#b89050"/>
+            <circle cx="26.5" cy="6" r="1.5" fill="#6a4010"/><circle cx="39.5" cy="6" r="1.5" fill="#6a4010"/>
+            <ellipse cx="33" cy="98" rx="24" ry="30" fill="url(#gBody)"/>
+            <ellipse cx="33" cy="72" rx="17" ry="20" fill="url(#gBody)"/>
+            <rect x="18.5" y="74" width="29" height="16" fill="url(#gBody)"/>
+            <circle cx="33" cy="83" r="9" fill="#160800"/>
+            <circle cx="33" cy="83" r="9" fill="none" stroke="#c8a060" stroke-width="1.2" opacity="0.65"/>
+            <circle cx="33" cy="83" r="6.2" fill="none" stroke="#c8a060" stroke-width="0.7" opacity="0.4"/>
+            <line x1="30" y1="10" x2="30" y2="118" stroke="rgba(255,255,255,0.28)" stroke-width="0.7"/>
+            <line x1="32" y1="10" x2="32" y2="118" stroke="rgba(255,255,255,0.22)" stroke-width="0.6"/>
+            <line x1="34" y1="10" x2="34" y2="118" stroke="rgba(255,255,255,0.22)" stroke-width="0.6"/>
+            <line x1="36" y1="10" x2="36" y2="118" stroke="rgba(255,255,255,0.18)" stroke-width="0.55"/>
+            <rect x="25" y="112" width="16" height="6" rx="2.5" fill="#3a1a06"/>
+            <ellipse cx="24" cy="74" rx="7" ry="16" fill="url(#gSheen)" transform="rotate(-12,24,74)"/>
+          </svg>
+        </div>
+      </div>
+      <div class="legs">
+        <div class="leg"><div class="shoe"></div></div>
+        <div class="leg"><div class="shoe"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="vignette"></div>
+
+<div class="now-playing" id="nowPlaying">
+  <div class="np-bars">
+    <div class="np-bar"></div><div class="np-bar"></div><div class="np-bar"></div>
+    <div class="np-bar"></div><div class="np-bar"></div>
+  </div>
+  <div class="np-text">Tujhe Dekha To... ♪</div>
+</div>
+
+<audio id="audioPlayer" loop src="music.ogg"></audio>
+
+<script>
+/* ══ MUSTARD FIELD ══ */
+const canvas = document.getElementById('fieldCanvas');
+const ctx = canvas.getContext('2d');
+let W, H, plants = [], t = 0;
+
+function resize() {
+  W = canvas.width = canvas.offsetWidth;
+  H = canvas.height = canvas.offsetHeight;
+  buildField();
+}
+
+function buildField() {
+  plants = [];
+  const layers = [
+    {yFrac:0.04,n:85,hFrac:0.60,sw:2.6},{yFrac:0.16,n:72,hFrac:0.50,sw:2.3},
+    {yFrac:0.29,n:62,hFrac:0.40,sw:2.0},{yFrac:0.43,n:52,hFrac:0.30,sw:1.7},
+    {yFrac:0.57,n:44,hFrac:0.22,sw:1.5},{yFrac:0.70,n:38,hFrac:0.15,sw:1.3},
+  ];
+  layers.forEach(l => {
+    for (let i = 0; i < l.n; i++) {
+      const x = ((i / l.n) + (Math.random() - 0.5) * (1 / l.n)) * W;
+      const stemH = H * l.hFrac * (0.78 + Math.random() * 0.44);
+      const phase = Math.random() * Math.PI * 2;
+      const speed = 0.38 + Math.random() * 0.42;
+      const amp   = 2.5 + Math.random() * 2.0;
+      const florets = [];
+      const fc = 3 + Math.floor(Math.random() * 4);
+      for (let f = 0; f < fc; f++) {
+        florets.push({
+          ty: 0.82 + f * 0.045,
+          ox: (Math.random() - 0.5) * 12,
+          r: 2.2 + Math.random() * 2.8,
+          hue: 40 + Math.random() * 20,
+          lit: 52 + Math.random() * 22
+        });
+      }
+      plants.push({ x, yBase: H, stemH, phase, speed, amp, sw: l.sw * (0.65 + Math.random() * 0.7), florets, layerY: l.yFrac });
+    }
+  });
+  plants.sort((a, b) => a.layerY - b.layerY);
+}
+
+function drawField(now) {
+  ctx.clearRect(0, 0, W, H);
+  plants.forEach(p => {
+    const sway = Math.sin(now * p.speed + p.phase) * p.amp * (1 - p.layerY * 0.6);
+    const tipX = sway, tipY = -p.stemH;
+    ctx.save();
+    ctx.translate(p.x, p.yBase);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(sway * 0.4, tipY * 0.55, tipX, tipY);
+    ctx.strokeStyle = `hsl(100,44%,${Math.round(18 + p.layerY * 18)}%)`;
+    ctx.lineWidth = p.sw;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+    p.florets.forEach(fl => {
+      const bx = 2*(1-fl.ty)*fl.ty*(sway*0.4) + fl.ty*fl.ty*tipX + fl.ox;
+      const by = 2*(1-fl.ty)*fl.ty*(tipY*0.55) + fl.ty*fl.ty*tipY;
+      ctx.beginPath();
+      ctx.arc(bx, by, fl.r, 0, Math.PI * 2);
+      ctx.fillStyle = `hsl(${fl.hue},88%,${fl.lit}%)`;
+      ctx.shadowColor = 'rgba(0,0,0,0.15)';
+      ctx.shadowBlur = 2;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    });
+    ctx.restore();
+  });
+}
+
+function loop() { t += 0.016; drawField(t); requestAnimationFrame(loop); }
+window.addEventListener('resize', resize);
+resize();
+loop();
+
+/* ══ MUSIC NOTES ══ */
+const noteGlyphs = ['♪','♫','♬','♩'];
+let notesOn = false;
+
+function spawnNote() {
+  if (!notesOn) return;
+  const el = document.createElement('div');
+  el.className = 'note';
+  el.textContent = noteGlyphs[Math.floor(Math.random() * noteGlyphs.length)];
+  const nx = (Math.random() - 0.5) * 90;
+  const ny = -(55 + Math.random() * 90);
+  const nr = (Math.random() - 0.5) * 45 + 'deg';
+  el.style.setProperty('--nx', nx + 'px');
+  el.style.setProperty('--ny', ny + 'px');
+  el.style.setProperty('--nr', nr);
+  const r = document.getElementById('character').getBoundingClientRect();
+  el.style.left = (r.left + r.width * 0.72 + (Math.random() - 0.3) * 28) + 'px';
+  el.style.top  = (r.top + r.height * 0.42) + 'px';
+  el.style.animationDuration = (1.8 + Math.random() * 1.8) + 's';
+  el.style.fontSize = (13 + Math.random() * 11) + 'px';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+setInterval(spawnNote, 480);
+
+/* ══ START ON CLICK ══ */
+function startScene() {
+  const overlay = document.getElementById('startOverlay');
+  overlay.classList.add('fade-out');
+  setTimeout(() => overlay.remove(), 650);
+
+  const player = document.getElementById('audioPlayer');
+  player.play()
+    .then(() => {
+      document.getElementById('nowPlaying').classList.add('active');
+      notesOn = true;
+    })
+    .catch(err => console.warn('Audio play failed:', err));
+}
+</script>
+</body>
+</html>
